@@ -18,7 +18,8 @@
     "express": "^4.19.2",
     "ioredis": "^5.4.1",
     "tsc-watch": "^6.2.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
