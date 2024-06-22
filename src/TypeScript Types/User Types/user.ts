@@ -9,3 +9,8 @@ export interface verifyCodeBody {
     email : string
     code : string
 }
+
+export interface loginUserBody {
+    email  : string
+    password : string
+}

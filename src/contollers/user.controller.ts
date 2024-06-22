@@ -3,11 +3,37 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { Request, Response, json } from "express";
 import {
   RegisterUserBody,
+  loginUserBody,
   verifyCodeBody,
 } from "../TypeScript Types/User Types/user";
 import { ApiResponse } from "../utils/ApiResponse";
 import bcrypt from "bcrypt";
-import { emailQueue } from "../constants/emailQueue";
+// import { emailQueue } from "../constants/emailQueue";
+import { ApiError } from "../utils/ApiError";
+import { UserService } from "../utils/UserService";
+
+const generateAccessAndRerfreshTokens = async (userID: string) => {
+  try {
+    const userService = await UserService.findUserById(userID);
+
+    if (!userService) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const accessToken = userService.generateAccessToken();
+    const refreshToken = userService.generateRefreshToken();
+
+    // saving refresh token in database
+    await userService.saveRefreshToken(refreshToken);
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Somehting went wrong while generating access and refresh token"
+    );
+  }
+};
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
   try {
@@ -70,11 +96,11 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // adding email into queue for sending verifycode
-    await emailQueue.add(`${Date.now}`, {
-      to: email,
-      subject: "Please Verify your Account",
-      body: `Dear ${name} , Please verify your email  , your verification code ${verifyCode} `,
-    });
+    // await emailQueue.add(`${Date.now}`, {
+    //   to: email,
+    //   subject: "Please Verify your Account",
+    //   body: `Dear ${name} , Please verify your email  , your verification code ${verifyCode} `,
+    // });
 
     return res.json(new ApiResponse(true, "user created"));
   } catch (error) {
@@ -142,4 +168,90 @@ const verifycode = asyncHandler(async (req: Request, res: Response) => {
       .json(new ApiResponse(false, "error while verifying code"));
   }
 });
-export { registerUser, verifycode };
+
+const loginUser = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { email, password }: loginUserBody = req.body;
+
+    if ([email, password].some((filed) => filed.trim() === "")) {
+      return res
+        .status(400)
+        .json(new ApiResponse(false, "All fields is required"));
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+       email
+      },
+    });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json(new ApiResponse(false, `User not found with ${email}`));
+    }
+    if (!user.isVerified) {
+      return res
+        .status(400)
+        .json(new ApiResponse(false, "Please verify your account first"));
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordCorrect) {
+      return res.status(400).json(new ApiResponse(false, "Password Incorrect"));
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRerfreshTokens(
+      user.id
+    );
+
+    const cookkieOptions = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookkieOptions)
+      .cookie("refreshToken", refreshToken, cookkieOptions)
+      .json(new ApiResponse(true, " User login Successfully"));
+  } catch (error) {
+    return res.status(500).json("error while login User");
+  }
+});
+
+const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const user = req.user
+    if (!user) {
+      throw new ApiError(400 , "Unauthorized request")
+    }
+
+    // updating user
+    await prisma.user.update({
+      where : {
+        id : user.id
+      } ,
+      data : {
+        refreshToken : null
+      }
+    })
+
+    const cookkieOptions = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    return res
+    .status(200)
+    .clearCookie("accessToken" , cookkieOptions )
+    .clearCookie("refreshToken" , cookkieOptions)
+    .json(new ApiResponse(true , "User Logout Successfully"))
+
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(false , "error while logout User"))
+  }
+});
+
+export { registerUser, verifycode, loginUser, logoutUser };
