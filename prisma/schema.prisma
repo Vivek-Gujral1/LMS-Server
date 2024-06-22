@@ -21,10 +21,48 @@ model User {
   avatar           String?
   verifyCode       String
   verifyCodeExpiry DateTime
-  isVerified       Boolean   @default(false)
+  isVerified       Boolean  @default(false)
   refreshToken     String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  videos           Video[]
+  courses          Course[] @relation("courseOwner")
+  courseEnrollmentsID  String[] @db.ObjectId
+  courseEnrollments Course[] @relation(fields: [courseEnrollmentsID] , references: [id])  
 
   @@map("users")
+}
+
+model Video {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  videoFile     String
+  thumbnail     String?
+  duration      Int
+  isActive      Boolean  @default(true)
+  videoOwnerID  String   @db.ObjectId
+  videoOwner    User     @relation(fields: [videoOwnerID], references: [id])
+  videoCourseId String   @db.ObjectId
+  videoCourse   Course   @relation(fields: [videoCourseId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("videos")
+}
+
+model Course {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String
+  videos      Video[]
+  courseOwnerID String   @db.ObjectId
+  courseOwner User @relation( "courseOwner",fields: [courseOwnerID]  , references: [id])
+  enrolledUsersID String[] @db.ObjectId
+  enrolledUsers  User[] @relation(fields: [enrolledUsersID] , references: [id])
+  courseImage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("courses")
 }
