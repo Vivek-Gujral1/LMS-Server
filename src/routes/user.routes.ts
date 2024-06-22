@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  chechEmailUnique,
   loginUser,
   logoutUser,
   refreshTooken,
@@ -10,10 +11,11 @@ import { verifyJWT } from "../middlewares/auth.middelware";
 
 const router = Router();
 
-router.route("/create").post(registerUser);
+router.route("/register").post(registerUser);
 router.route("/verify").post(verifycode);
 router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refreh-access-token").post(refreshTooken);
+router.route("/check-email-unique").get(chechEmailUnique)
 
 export default router;

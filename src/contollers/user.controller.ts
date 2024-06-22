@@ -304,4 +304,33 @@ const refreshTooken = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { registerUser, verifycode, loginUser, logoutUser , refreshTooken };
+const chechEmailUnique = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const email = req.query.email;
+    console.log( email , "email");
+    
+
+    if (!email) {
+      throw new ApiError(400, "invalid query Parameters");
+    }
+    const ExistingEmailAndVerified = await prisma.user.findFirst({
+      where: {
+        email: String(email),
+        isVerified: true,
+      },
+    });
+
+    if (ExistingEmailAndVerified) {
+      return res
+        .status(200)
+        .json(new ApiResponse(false, "email already in use "));
+    }
+    return res.status(200).json(new ApiResponse(true, "email is unique"));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(false, "error while checking email"));
+  }
+});
+
+export { registerUser, verifycode, loginUser, logoutUser, refreshTooken , chechEmailUnique };
