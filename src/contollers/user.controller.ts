@@ -1,6 +1,6 @@
 import prisma from "../constants/prisma";
 import { asyncHandler } from "../utils/asyncHandler";
-import { Request, Response, json } from "express";
+import { Request, Response } from "express";
 import {
   RegisterUserBody,
   loginUserBody,
@@ -11,6 +11,7 @@ import bcrypt from "bcrypt";
 // import { emailQueue } from "../constants/emailQueue";
 import { ApiError } from "../utils/ApiError";
 import { UserService } from "../utils/UserService";
+import jwt from "jsonwebtoken";
 
 const generateAccessAndRerfreshTokens = async (userID: string) => {
   try {
@@ -181,7 +182,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
 
     const user = await prisma.user.findFirst({
       where: {
-       email
+        email,
       },
     });
 
@@ -223,20 +224,20 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
 
 const logoutUser = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const user = req.user
+    const user = req.user;
     if (!user) {
-      throw new ApiError(400 , "Unauthorized request")
+      throw new ApiError(400, "Unauthorized request");
     }
 
     // updating user
     await prisma.user.update({
-      where : {
-        id : user.id
-      } ,
-      data : {
-        refreshToken : null
-      }
-    })
+      where: {
+        id: user.id,
+      },
+      data: {
+        refreshToken: null,
+      },
+    });
 
     const cookkieOptions = {
       httpOnly: true,
@@ -244,14 +245,63 @@ const logoutUser = asyncHandler(async (req: Request, res: Response) => {
     };
 
     return res
-    .status(200)
-    .clearCookie("accessToken" , cookkieOptions )
-    .clearCookie("refreshToken" , cookkieOptions)
-    .json(new ApiResponse(true , "User Logout Successfully"))
-
+      .status(200)
+      .clearCookie("accessToken", cookkieOptions)
+      .clearCookie("refreshToken", cookkieOptions)
+      .json(new ApiResponse(true, "User Logout Successfully"));
   } catch (error) {
-    return res.status(500).json(new ApiResponse(false , "error while logout User"))
+    return res
+      .status(500)
+      .json(new ApiResponse(false, "error while logout User"));
   }
 });
 
-export { registerUser, verifycode, loginUser, logoutUser };
+const refreshTooken = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const InComingrefreshToken = req.cookies.refreshToken;
+
+    if (!InComingrefreshToken) {
+      throw new ApiError(401, "unauthorized Request");
+    }
+
+    const decodedToken = jwt.verify(
+      InComingrefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    ) as { id: string };
+
+    const user = await prisma.user.findFirst({
+      where: {
+        id: decodedToken.id,
+      },
+    });
+
+    if (!user) {
+      throw new ApiError(401, "Invalid Refresfh Token");
+    }
+
+    if (InComingrefreshToken !== user.refreshToken) {
+      throw new ApiError(401, "Refresh Token Expired");
+    }
+
+    const cookkieOptions = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, refreshToken } = await generateAccessAndRerfreshTokens(
+      user.id
+    );
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookkieOptions)
+      .cookie("refreshToken", refreshToken, cookkieOptions)
+      .json(new ApiResponse(true, "Access Token Refreshed Successfully"));
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(false, "error while refreshig accessToken"));
+  }
+});
+
+export { registerUser, verifycode, loginUser, logoutUser , refreshTooken };
