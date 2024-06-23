@@ -61,7 +61,10 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
       return res
         .status(400)
         .json(
-          new ApiResponse(false, "user already registered with this email")
+         {
+          success : false ,
+          message : "User aready registered with this email"
+         }
         );
     } else if (existedUser && existedUser.isVerified === false) {
       // in this case we tackle for if one user registers and not verified his email and second user comes and registers with same email then we give email to second user if second user verifies email
@@ -103,31 +106,47 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     //   body: `Dear ${name} , Please verify your email  , your verification code ${verifyCode} `,
     // });
 
-    return res.json(new ApiResponse(true, "user created"));
+    return res.json({
+      success  : true ,
+      message : "User Created Successfully" ,
+     
+    });
   } catch (error) {
     console.log(error);
 
     return res
       .status(500)
-      .json(new ApiResponse(false, "error while registering user"));
+      .json({
+        success : false ,
+        message : "error while registering user" ,
+
+      });
   }
 });
 
 const verifycode = asyncHandler(async (req: Request, res: Response) => {
   try {
+    console.log("chala");
+    
     const { email, code }: verifyCodeBody = req.body;
+    console.log(req.body , "1");
+    
 
-    if ([email, code].some((filed) => filed.trim() === "")) {
+    if ([code, email ].some((filed) => filed.trim() === "")) {
       return res
         .status(400)
         .json(new ApiResponse(false, "All fields is required"));
     }
+    console.log(req.body , "2");
+    
 
     const user = await prisma.user.findFirst({
       where: {
         email,
       },
     });
+    console.log(user);
+    
 
     if (!user) {
       return res.status(404).json(new ApiResponse(false, "User not Found"));
@@ -137,6 +156,8 @@ const verifycode = asyncHandler(async (req: Request, res: Response) => {
     const isCodeNotExpired = new Date(user.verifyCodeExpiry) > new Date();
 
     if (isCodeNotExpired && isCodeValid) {
+      console.log("if chala");
+      
       await prisma.user.update({
         where: {
           id: user.id,
@@ -148,25 +169,38 @@ const verifycode = asyncHandler(async (req: Request, res: Response) => {
 
       return res
         .status(200)
-        .json(new ApiResponse(true, "Account verification successfully"));
+        .json({
+          success : true ,
+          message : "Account Verified Successfully"
+        });
     } else if (!isCodeNotExpired) {
+      console.log("else if");
+      
       return res
         .status(400)
         .json(
-          new ApiResponse(
-            false,
-            "Verification Code expired , Please Sign-In again"
-          )
+         {
+          success : false ,
+          message : "Verification code expired  , Please Sign In again"
+         }
         );
     } else {
       return res
         .status(400)
-        .json(new ApiResponse(false, "Incorrect verification code"));
+        .json({
+          success : false ,
+          message : "Inavlid Code"
+        });
     }
   } catch {
+    console.log("sidha catch");
+    
     return res
       .status(500)
-      .json(new ApiResponse(false, "error while verifying code"));
+      .json({
+        success : false ,
+        message :"error while verifying account"
+      })
   }
 });
 
@@ -177,7 +211,10 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     if ([email, password].some((filed) => filed.trim() === "")) {
       return res
         .status(400)
-        .json(new ApiResponse(false, "All fields is required"));
+        .json({
+          success : false ,
+          message : "All fields are required"
+        });
     }
 
     const user = await prisma.user.findFirst({
@@ -194,13 +231,19 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     if (!user.isVerified) {
       return res
         .status(400)
-        .json(new ApiResponse(false, "Please verify your account first"));
+        .json({
+          success : false ,
+          message : "please verify your account first"
+        });
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
-      return res.status(400).json(new ApiResponse(false, "Password Incorrect"));
+      return res.status(400).json({
+        success : false ,
+        message : "Password Incorrect"
+      });
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRerfreshTokens(
@@ -216,9 +259,15 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
       .status(200)
       .cookie("accessToken", accessToken, cookkieOptions)
       .cookie("refreshToken", refreshToken, cookkieOptions)
-      .json(new ApiResponse(true, " User login Successfully"));
+      .json({
+        success : true ,
+        message : "User login Successfully"
+      });
   } catch (error) {
-    return res.status(500).json("error while login User");
+    return res.status(500).json({
+      success : false ,
+      message : "error while login user"
+    });
   }
 });
 
@@ -333,4 +382,20 @@ const chechEmailUnique = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { registerUser, verifycode, loginUser, logoutUser, refreshTooken , chechEmailUnique };
+const getCurrentUser = asyncHandler(async(req : Request  , res : Response)=>{
+   const user = req.user
+   if (!user) {
+    return res.status(400).json({
+      success : false,
+      message :"Unauthorized request"
+    })
+   }
+
+   return res.status(200).json({
+    success : true,
+    message : "Current User fetched successfuly" ,
+    user
+   })
+})
+
+export { registerUser, verifycode, loginUser, logoutUser, refreshTooken , chechEmailUnique , getCurrentUser };
