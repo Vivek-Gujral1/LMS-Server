@@ -13,6 +13,122 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum MainCategory {
+  ACADEMIC_SUBJECTS
+  PROFESSIONAL_DEVELOPMENT
+  TECHNOLOGY_AND_COMPUTER_SCIENCE
+  HEALTH_AND_WELLNESS
+  CREATIVE_ARTS
+  ENGINEERING_AND_TECHNOLOGY
+  PERSONAL_DEVELOPMENT
+  SPECIALIZED_COURSES
+  INTERDISCIPLINARY_STUDIES
+  MISCELLANEOUS
+}
+
+enum SubCategory {
+  // Academic Subjects
+  MATHEMATICS
+  SCIENCE
+  PHYSICS
+  CHEMISTRY
+  BIOLOGY
+  HISTORY
+  LITERATURE
+  LANGUAGES
+  ENGLISH
+  SPANISH
+  FRENCH
+  GEOGRAPHY
+  ECONOMICS
+  POLITICAL_SCIENCE
+  PSYCHOLOGY
+  SOCIOLOGY
+  PHILOSOPHY
+
+  // Professional Development
+  BUSINESS_ADMINISTRATION
+  MARKETING
+  FINANCE
+  MANAGEMENT
+  LEADERSHIP
+  PROJECT_MANAGEMENT
+  ENTREPRENEURSHIP
+  HUMAN_RESOURCES
+
+  // Technology and Computer Science
+  PROGRAMMING
+  JAVASCRIPT
+  PYTHON
+  JAVA
+  WEB_DEVELOPMENT
+  MOBILE_APP_DEVELOPMENT
+  DATA_SCIENCE
+  MACHINE_LEARNING_AI
+  CYBERSECURITY
+  CLOUD_COMPUTING
+  SOFTWARE_ENGINEERING
+  DATABASE_MANAGEMENT
+
+  // Health and Wellness
+  NUTRITION
+  FITNESS
+  YOGA
+  MEDITATION
+  MENTAL_HEALTH
+  NURSING
+  HEALTHCARE_MANAGEMENT
+
+  // Creative Arts
+  MUSIC
+  VISUAL_ARTS
+  DRAWING
+  PAINTING
+  SCULPTURE
+  PHOTOGRAPHY
+  FILM_VIDEO_PRODUCTION
+  GRAPHIC_DESIGN
+  WRITING_COMPOSITION
+
+  // Engineering and Technology
+  ELECTRICAL_ENGINEERING
+  MECHANICAL_ENGINEERING
+  CIVIL_ENGINEERING
+  AEROSPACE_ENGINEERING
+  ENVIRONMENTAL_ENGINEERING
+  ROBOTICS
+
+  // Personal Development
+  TIME_MANAGEMENT
+  COMMUNICATION_SKILLS
+  PERSONAL_FINANCE
+  CAREER_PLANNING_DEVELOPMENT
+  GOAL_SETTING
+  STRESS_MANAGEMENT
+
+  // Specialized Courses
+  LEGAL_STUDIES
+  EDUCATION_TEACHING_METHODS
+  ARCHITECTURE
+  LINGUISTICS
+  RELIGIOUS_STUDIES
+  ARCHAEOLOGY
+
+  // Interdisciplinary Studies
+  INTERDISCIPLINARY_STUDIES
+  LIBERAL_ARTS
+  GLOBAL_STUDIES
+  CULTURAL_STUDIES
+  ENVIRONMENTAL_STUDIES
+
+  // Miscellaneous
+  GAMING_GAME_DEVELOPMENT
+  SPORTS_MANAGEMENT
+  HOSPITALITY_TOURISM
+  FASHION_DESIGN
+  DISASTER_MANAGEMENT
+}
+
 model User {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   email            String
@@ -56,9 +172,11 @@ model Course {
   name        String
   description String?
   socketRoomName String
+  MainCategory  MainCategory
+  SubCategory  SubCategory
   videos      Video[]
-  courseOwnerID String   @db.ObjectId
-  courseOwner User @relation( "courseOwner",fields: [courseOwnerID]  , references: [id])
+  InstructorID String   @db.ObjectId
+  Instructor User @relation( "courseOwner",fields: [InstructorID]  , references: [id])
   enrolledUsersID String[] @db.ObjectId
   enrolledUsers  User[] @relation(fields: [enrolledUsersID] , references: [id])
   courseImage String?
