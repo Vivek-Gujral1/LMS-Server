@@ -54,7 +54,8 @@ model Video {
 model Course {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String
-  description String
+  description String?
+  socketRoomName String
   videos      Video[]
   courseOwnerID String   @db.ObjectId
   courseOwner User @relation( "courseOwner",fields: [courseOwnerID]  , references: [id])
