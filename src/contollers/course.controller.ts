@@ -4,8 +4,10 @@ import {
   categoryMapping,
 } from "../constants/CategoryEnum";
 import prisma from "../constants/prisma";
+import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Request, Response } from "express";
+import { uploadOnCloudinary } from "../utils/cloudinary";
 
 const createCourse = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user;
@@ -60,8 +62,19 @@ const createCourse = asyncHandler(async (req: Request, res: Response) => {
       });
     }
 
-    // creates course
 
+
+    const courseImageLocalPath = req.file?.path
+    if (!courseImageLocalPath) {
+      throw new ApiError(400  , "CourseImage in local path missing")
+    }
+    const courseImage = await uploadOnCloudinary(courseImageLocalPath)
+
+    if (!courseImage?.url) {
+       throw new ApiError(500 , "Error while uploading image on cloudinary")
+    }
+    
+    // creates course
     await prisma.course.create({
       data: {
         name,
@@ -74,6 +87,7 @@ const createCourse = asyncHandler(async (req: Request, res: Response) => {
         },
         MainCategory: mainCategory as MainCategory,
         SubCategory: subCategory as SubCategory,
+        courseImage : courseImage?.url
       },
     });
 
