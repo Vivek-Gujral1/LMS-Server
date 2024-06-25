@@ -19,25 +19,27 @@ const createCourse = asyncHandler(async (req: Request, res: Response) => {
   }
   try {
     const {
-      name,
+      title,
       description,
       mainCategory,
       subCategory,
     }: {
-      name: string;
+      title: string;
       description?: string;
       mainCategory: MainCategory;
       subCategory: SubCategory;
     } = req.body;
 
-    if (name.trim() === "") {
+    console.log(req.body);
+
+    if (title.trim() === "") {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
     }
 
-    const socketRoomName = `${user.id}_${name}`; // we already check that we get only unique name by user from user courses
+    const socketRoomName = `${user.id}_${title}`; // we already check that we get only unique name by user from user courses
 
     // Validate main category and subcategory
     if (!(mainCategory in MainCategory)) {
@@ -62,22 +64,25 @@ const createCourse = asyncHandler(async (req: Request, res: Response) => {
       });
     }
 
+    console.log("image ka pehla");
 
-
-    const courseImageLocalPath = req.file?.path
+    const courseImageLocalPath = req.file?.path;
     if (!courseImageLocalPath) {
-      throw new ApiError(400  , "CourseImage in local path missing")
+      throw new ApiError(400, "CourseImage in local path missing");
     }
-    const courseImage = await uploadOnCloudinary(courseImageLocalPath)
+    console.log("image ka baad");
+
+    const courseImage = await uploadOnCloudinary(courseImageLocalPath);
 
     if (!courseImage?.url) {
-       throw new ApiError(500 , "Error while uploading image on cloudinary")
+      throw new ApiError(500, "Error while uploading image on cloudinary");
     }
-    
+    console.log("abhi create hoga");
+
     // creates course
     await prisma.course.create({
       data: {
-        name,
+        name: title,
         description,
         socketRoomName,
         Instructor: {
@@ -87,7 +92,7 @@ const createCourse = asyncHandler(async (req: Request, res: Response) => {
         },
         MainCategory: mainCategory as MainCategory,
         SubCategory: subCategory as SubCategory,
-        courseImage : courseImage?.url
+        courseImage: courseImage?.url,
       },
     });
 
@@ -95,7 +100,9 @@ const createCourse = asyncHandler(async (req: Request, res: Response) => {
       success: true,
       message: "Course Created Successfully",
     });
-  } catch {
+  } catch (error) {
+    console.log(error);
+
     return res.status(500).json({
       success: false,
       message: "error while creating course",
@@ -152,4 +159,50 @@ const CheckExistingCourseByUser = asyncHandler(
   }
 );
 
-export { CheckExistingCourseByUser, createCourse };
+const getUserCourses = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(401, "Not Authenticated");
+  }
+  try {
+    const courses = await prisma.course.findMany({
+      where: {
+        InstructorID: user.id,
+      },
+      select: {
+        courseImage: true,
+        description: true,
+        createdAt: true,
+        id: true,
+        Instructor: {
+          select: {
+            avatar: true,
+            createdAt: true,
+            email: true,
+            id: true,
+            isVerified: true,
+            name: true,
+          },
+        },
+        MainCategory: true,
+        name: true,
+        socketRoomName: true,
+        SubCategory: true,
+      },
+    });
+
+    return res.status(200).json({
+      success : true ,
+      message : "User uploaded Courses fetched" ,
+      courses : courses ?  courses : {}
+    })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success : false ,
+      message : "error while fetching user courses"
+    })
+  }
+});
+
+export { CheckExistingCourseByUser, createCourse , getUserCourses };
