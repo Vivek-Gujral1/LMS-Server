@@ -6,7 +6,7 @@ import {
   loginUserBody,
   verifyCodeBody,
 } from "../TypeScript Types/User Types/user";
-import { ApiResponse } from "../utils/ApiResponse";
+
 import bcrypt from "bcrypt";
 // import { emailQueue } from "../constants/emailQueue";
 import { ApiError } from "../utils/ApiError";
@@ -43,7 +43,10 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     if ([name, email, password].some((filed) => filed.trim() === "")) {
       return res
         .status(400)
-        .json(new ApiResponse(false, "All fields is required"));
+        .json({
+          message : "All fields are required" ,
+          success : false
+        });
     }
 
     const existedUser = await prisma.user.findFirst({
@@ -135,7 +138,10 @@ const verifycode = asyncHandler(async (req: Request, res: Response) => {
     if ([code, email ].some((filed) => filed.trim() === "")) {
       return res
         .status(400)
-        .json(new ApiResponse(false, "All fields is required"));
+        .json({
+          success : false ,
+          message : "All fields are required"
+        });
     }
     console.log(req.body , "2");
     
@@ -149,7 +155,10 @@ const verifycode = asyncHandler(async (req: Request, res: Response) => {
     
 
     if (!user) {
-      return res.status(404).json(new ApiResponse(false, "User not Found"));
+      return res.status(404).json({
+        success : false ,
+        message : "All fields are required"
+      });
     }
 
     const isCodeValid = user.verifyCode === code;
@@ -226,7 +235,10 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     if (!user) {
       return res
         .status(404)
-        .json(new ApiResponse(false, `User not found with ${email}`));
+        .json({
+          success : false ,
+          message : `user not found with this ${email} `
+        });
     }
     if (!user.isVerified) {
       return res
@@ -297,11 +309,17 @@ const logoutUser = asyncHandler(async (req: Request, res: Response) => {
       .status(200)
       .clearCookie("accessToken", cookkieOptions)
       .clearCookie("refreshToken", cookkieOptions)
-      .json(new ApiResponse(true, "User Logout Successfully"));
+      .json({
+        success : true ,
+          message : "User logout Successfully"
+      });
   } catch (error) {
     return res
       .status(500)
-      .json(new ApiResponse(false, "error while logout User"));
+      .json({
+        success : false ,
+          message : "error while logout user"
+      });
   }
 });
 
@@ -345,11 +363,17 @@ const refreshTooken = asyncHandler(async (req: Request, res: Response) => {
       .status(200)
       .cookie("accessToken", accessToken, cookkieOptions)
       .cookie("refreshToken", refreshToken, cookkieOptions)
-      .json(new ApiResponse(true, "Access Token Refreshed Successfully"));
+      .json({
+        success : true ,
+          message : "Access token refreshed successfully"
+      });
   } catch (error) {
     return res
       .status(500)
-      .json(new ApiResponse(false, "error while refreshig accessToken"));
+      .json({
+        success : false ,
+          message : "error while refreshing token"
+      });
   }
 });
 
@@ -372,13 +396,22 @@ const chechEmailUnique = asyncHandler(async (req: Request, res: Response) => {
     if (ExistingEmailAndVerified) {
       return res
         .status(200)
-        .json(new ApiResponse(false, "email already in use "));
+        .json({
+          success : false ,
+          message : "email already in use"
+        });
     }
-    return res.status(200).json(new ApiResponse(true, "email is unique"));
+    return res.status(200).json({
+      success : true ,
+          message : "email is unique"
+    });
   } catch (error) {
     return res
       .status(500)
-      .json(new ApiResponse(false, "error while checking email"));
+      .json({
+        success : false ,
+          message : "error while checking email"
+      });
   }
 });
 
