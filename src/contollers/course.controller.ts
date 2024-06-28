@@ -8,8 +8,15 @@ import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Request, Response } from "express";
 import { uploadOnCloudinary } from "../utils/cloudinary";
+import { validationResult } from "express-validator";
 
 const createCourse = asyncHandler(async (req: Request, res: Response) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    // If there are validation errors, return a 400 response with the error details
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const user = req.user;
   if (!user) {
     return res.status(401).json({
@@ -32,12 +39,7 @@ const createCourse = asyncHandler(async (req: Request, res: Response) => {
 
     console.log(req.body);
 
-    if (title.trim() === "") {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
-    }
+    
 
     const socketRoomName = `${user.id}_${title}`; // we already check that we get only unique name by user from user courses
 

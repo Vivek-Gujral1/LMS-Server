@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler";
 import { Request, Response, NextFunction } from "express";
-import { ApiResponse } from "../utils/ApiResponse";
+
 import jwt from "jsonwebtoken";
 import prisma from "../constants/prisma";
 
@@ -28,7 +28,10 @@ export const verifyJWT = asyncHandler(
 
       if (!token) {
         return res
-          .json(new ApiResponse(false, "unauthorized request"))
+          .json({
+            success : false ,
+            message : "unauthorized request"
+          })
           .status(401);
       }
 
@@ -51,12 +54,18 @@ export const verifyJWT = asyncHandler(
         },
       });
       if (!user) {
-        return res.json(new ApiResponse(false, "User not found")).status(500);
+        return res.json({
+           success : false ,
+            message : "User not found"
+        }).status(500);
       }
       req.user = user;
       next();
     } catch (error) {
-      return res.json(new ApiResponse(false, "error while varifying token"));
+      return res.json({
+         success : false ,
+            message : "error while verifying request"
+      });
     }
   }
 );

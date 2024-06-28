@@ -12,6 +12,7 @@ import bcrypt from "bcrypt";
 import { ApiError } from "../utils/ApiError";
 import { UserService } from "../utils/UserService";
 import jwt from "jsonwebtoken";
+import { uploadOnCloudinary } from "../utils/cloudinary";
 
 const generateAccessAndRerfreshTokens = async (userID: string) => {
   try {
@@ -276,6 +277,8 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
         message : "User login Successfully"
       });
   } catch (error) {
+    console.log(error);
+    
     return res.status(500).json({
       success : false ,
       message : "error while login user"
@@ -431,4 +434,49 @@ const getCurrentUser = asyncHandler(async(req : Request  , res : Response)=>{
    })
 })
 
-export { registerUser, verifycode, loginUser, logoutUser, refreshTooken , chechEmailUnique , getCurrentUser };
+
+const uploadAvatar = asyncHandler(async(req : Request , res : Response)=>{
+  const user = req.user
+  if (!user) {
+    return res.status(400).json({
+      success : false,
+      message :"Unauthorized request"
+    })
+  }
+
+  try {
+    
+    const avatarLocalPath = req.file?.path
+    if (!avatarLocalPath) {
+      throw new ApiError(400, " Avatar local path missing");
+    }
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+    // updates user
+
+    await prisma.user.update({
+      where : {
+        id : user.id
+      } ,
+      data : {
+        avatar : avatar?.url
+      }
+    })
+
+    return res.status(200).json({
+      success : true ,
+      message : "User Avatar updated Successfully"
+    })
+
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({
+        success : false ,
+          message : "error while uploading user avatar"
+      });
+  }
+})
+
+export { registerUser, verifycode, loginUser, logoutUser, refreshTooken , chechEmailUnique , getCurrentUser , uploadAvatar };

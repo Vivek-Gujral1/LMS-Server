@@ -130,32 +130,33 @@ enum SubCategory {
 }
 
 model User {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  email            String
-  name             String
-  password         String
-  avatar           String?
-  verifyCode       String
-  verifyCodeExpiry DateTime
-  isVerified       Boolean  @default(false)
-  refreshToken     String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  videos           Video[]
-  courses          Course[] @relation("courseOwner")
-  courseEnrollmentsID  String[] @db.ObjectId
-  courseEnrollments Course[] @relation(fields: [courseEnrollmentsID] , references: [id])  
-  FollowersListUser FollowersList?
-  followersId                  String[]               @db.ObjectId
-  followers      FollowersList[] @relation("followers" , fields: [followersId] , references: [id])
+  id                  String          @id @default(auto()) @map("_id") @db.ObjectId
+  email               String
+  name                String
+  password            String
+  avatar              String?
+  verifyCode          String
+  verifyCodeExpiry    DateTime
+  isVerified          Boolean         @default(false)
+  refreshToken        String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  videos              Video[]
+  courses             Course[]        @relation("courseOwner")
+  courseEnrollmentsID String[]        @db.ObjectId
+  courseEnrollments   Course[]        @relation(fields: [courseEnrollmentsID], references: [id])
+  FollowersListUser   FollowersList?
+  followersId         String[]        @db.ObjectId
+  followers           FollowersList[] @relation("followers", fields: [followersId], references: [id])
+
   @@map("users")
 }
 
 model Video {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   title         String
-  description   String
-  videoFile     String
+  description   String?
+  videoFileURL     String  // video url
   thumbnail     String?
   duration      Int
   isActive      Boolean  @default(true)
@@ -170,31 +171,32 @@ model Video {
 }
 
 model Course {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String?
-  socketRoomName String
-  MainCategory  MainCategory
-  SubCategory  SubCategory
-  videos      Video[]
-  InstructorID String   @db.ObjectId
-  Instructor User @relation( "courseOwner",fields: [InstructorID]  , references: [id])
-  enrolledUsersID String[] @db.ObjectId
-  enrolledUsers  User[] @relation(fields: [enrolledUsersID] , references: [id])
-  courseImage String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String?
+  socketRoomName  String
+  MainCategory    MainCategory
+  SubCategory     SubCategory
+  videos          Video[]
+  InstructorID    String       @db.ObjectId
+  Instructor      User         @relation("courseOwner", fields: [InstructorID], references: [id])
+  enrolledUsersID String[]     @db.ObjectId
+  enrolledUsers   User[]       @relation(fields: [enrolledUsersID], references: [id])
+  courseImage     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@map("courses")
 }
 
 model FollowersList {
-  id String @id @default( auto()) @map("_id") @db.ObjectId
-  userId String @unique @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
   followersId String[] @db.ObjectId
-  followers User[] @relation("followers" , fields: [followersId] , references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  followers   User[]   @relation("followers", fields: [followersId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   @@map("followerslists")
 }
